@@ -1,9 +1,12 @@
+'use client';
+
 import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/types";
 import { Badge } from "@/components/ui/badge";
+import { useCartStore } from "@/store/cart-store";
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +17,21 @@ export function ProductCard({ product }: ProductCardProps) {
     typeof product.basePrice === "string"
       ? parseFloat(product.basePrice)
       : product.basePrice;
+  
+  const addItem = useCartStore(state => state.addItem);
+
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addItem({
+      id: `${product.id}-${Date.now()}`,
+      productId: product.id,
+      productName: product.name,
+      productImage: product.image,
+      basePrice: price,
+      quantity: 1,
+      selectedOptions: [],
+    });
+  };
 
   return (
     <Link
@@ -40,7 +58,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <button
           type="button"
           className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white opacity-0 shadow-lg transition group-hover:opacity-100 hover:bg-orange-600"
-          onClick={(e) => e.preventDefault()}
+          onClick={handleQuickAdd}
         >
           <Plus className="h-5 w-5" />
         </button>

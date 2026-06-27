@@ -1,8 +1,15 @@
+'use client';
+
 import Link from "next/link";
 import { ShoppingBag, Search, User, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCartStore } from "@/store/cart-store";
+import { useRouter } from "next/navigation";
 
 export function Header() {
+  const totalItems = useCartStore(state => state.totalItems);
+  const router = useRouter();
+
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-100 bg-white/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -33,12 +40,19 @@ export function Header() {
           <Button variant="ghost" size="icon">
             <User className="h-5 w-5" />
           </Button>
-          <Button variant="default" size="sm" className="relative">
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="relative"
+            onClick={() => router.push('/cart')}
+          >
             <ShoppingBag className="h-4 w-4" />
             <span className="hidden sm:inline">Giỏ hàng</span>
-            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-[10px] font-bold text-white">
-              0
-            </span>
+            {totalItems > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
+                {totalItems}
+              </span>
+            )}
           </Button>
         </div>
       </div>
