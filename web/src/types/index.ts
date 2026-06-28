@@ -8,6 +8,22 @@ export interface Category {
   _count?: { products: number };
 }
 
+export interface ProductOption {
+  id: string;
+  name: string;
+  extraPrice: string | number;
+  isAvailable: boolean;
+}
+
+export interface ProductOptionGroup {
+  id: string;
+  name: string;
+  required: boolean;
+  minSelect: number;
+  maxSelect: number;
+  options: ProductOption[];
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -22,6 +38,7 @@ export interface Product {
   };
   isFeatured?: boolean;
   isAvailable?: boolean;
+  optionGroups?: ProductOptionGroup[];
 }
 
 export interface ProductsResponse {
