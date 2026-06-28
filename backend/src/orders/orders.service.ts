@@ -220,4 +220,211 @@ export class OrdersService {
 
     return { success: true };
   }
+
+  async getAdminOrders() {
+    return this.prisma.order.findMany({
+      include: {
+        user: {
+          select: { id: true, fullName: true, email: true, phone: true },
+        },
+        items: { include: { product: true } },
+        statusLogs: true,
+        shipper: {
+          select: { id: true, fullName: true, phone: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateOrderStatus(
+    orderId: string,
+    status: OrderStatus,
+    userId: string,
+    userRole: string,
+    note?: string,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    // Shipper only allowed to update order assigned to them
+    if (userRole === 'SHIPPER' && order.shipperId !== userId) {
+      throw new BadRequestException('You are not assigned to this order');
+    }
+
+    const updatedData: any = { status };
+
+    if (status === OrderStatus.DELIVERED) {
+      updatedData.deliveredAt = new Date();
+      if (order.paymentMethod === 'COD') {
+        updatedData.paymentStatus = PaymentStatus.PAID;
+        updatedData.paidAt = new Date();
+      }
+    }
+
+    const updatedOrder = await this.prisma.$transaction(async (tx) => {
+      const o = await tx.order.update({
+        where: { id: orderId },
+        data: updatedData,
+      });
+
+      await tx.orderStatusLog.create({
+        data: {
+          orderId,
+          status,
+          note: note || `Trạng thái được cập nhật bởi ${userRole}`,
+          createdBy: userId,
+        },
+      });
+
+      // Loyalty points for customer when delivered
+      if (status === OrderStatus.DELIVERED && order.status !== OrderStatus.DELIVERED) {
+        const pointsEarned = Math.floor(order.totalAmount.toNumber() / 10000);
+        if (pointsEarned > 0) {
+          const u = await tx.user.findUnique({ where: { id: order.userId } });
+          if (u) {
+            const newPoints = u.loyaltyPoints + pointsEarned;
+            let tier = 'BRONZE';
+            if (newPoints >= 300) tier = 'GOLD';
+            else if (newPoints >= 100) tier = 'SILVER';
+
+            await tx.user.update({
+              where: { id: order.userId },
+              data: {
+                loyaltyPoints: newPoints,
+                loyaltyTier: tier,
+              },
+            });
+          }
+        }
+      }
+
+      return o;
+    });
+
+    this.eventsGateway.notifyOrderStatusChange(orderId, status);
+    return updatedOrder;
+  }
+
+  async shipperClaimOrder(orderId: string, shipperId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status !== OrderStatus.READY) {
+      throw new BadRequestException('Order is not ready for delivery');
+    }
+
+    if (order.shipperId) {
+      throw new BadRequestException('Order already claimed by another shipper');
+    }
+
+    const updatedOrder = await this.prisma.$transaction(async (tx) => {
+      const o = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          shipperId,
+          status: OrderStatus.DELIVERING,
+        },
+      });
+
+      await tx.orderStatusLog.create({
+        data: {
+          orderId,
+          status: OrderStatus.DELIVERING,
+          note: 'Shipper đã nhận đơn và bắt đầu giao hàng',
+          createdBy: shipperId,
+        },
+      });
+
+      return o;
+    });
+
+    this.eventsGateway.notifyOrderStatusChange(orderId, OrderStatus.DELIVERING);
+    return updatedOrder;
+  }
+
+  async getShipperAvailableOrders() {
+    return this.prisma.order.findMany({
+      where: {
+        status: OrderStatus.READY,
+        shipperId: null,
+      },
+      include: {
+        user: { select: { id: true, fullName: true, phone: true } },
+        items: { include: { product: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getShipperActiveOrders(shipperId: string) {
+    return this.prisma.order.findMany({
+      where: {
+        shipperId,
+        status: {
+          in: [OrderStatus.DELIVERING],
+        },
+      },
+      include: {
+        user: { select: { id: true, fullName: true, phone: true } },
+        items: { include: { product: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async checkCoupon(code: string) {
+    const coupon = await this.prisma.coupon.findUnique({
+      where: { code: code.toUpperCase(), isActive: true },
+    });
+    if (!coupon) {
+      throw new NotFoundException('Mã giảm giá không tồn tại');
+    }
+    if (coupon.maxUsage && coupon.usedCount >= coupon.maxUsage) {
+      throw new BadRequestException('Mã giảm giá đã hết lượt sử dụng');
+    }
+    if (coupon.expiresAt && new Date() > coupon.expiresAt) {
+      throw new BadRequestException('Mã giảm giá đã hết hạn');
+    }
+    return coupon;
+  }
+
+  async createReview(userId: string, orderId: string, dto: any) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order || order.userId !== userId) {
+      throw new NotFoundException('Đơn hàng không tồn tại');
+    }
+    if (order.status !== OrderStatus.DELIVERED) {
+      throw new BadRequestException('Chỉ có thể đánh giá đơn hàng đã giao thành công');
+    }
+
+    const hasProduct = order.items.some((i) => i.productId === dto.productId);
+    if (!hasProduct) {
+      throw new BadRequestException('Sản phẩm không thuộc đơn hàng này');
+    }
+
+    // SQLite uses TEXT for list type string representation
+    return this.prisma.review.create({
+      data: {
+        userId,
+        orderId,
+        productId: dto.productId,
+        rating: dto.rating,
+        comment: dto.comment,
+        images: dto.images ? JSON.stringify(dto.images) : '[]',
+      },
+    });
+  }
 }

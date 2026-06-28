@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsInt, IsOptional, Min, IsString } from 'class-validator';
 
 export class UpdateCartDto {
   @IsInt()

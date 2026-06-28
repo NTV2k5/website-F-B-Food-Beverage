@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import {
   CreateProductDto,
   ProductQueryDto,
@@ -23,9 +25,32 @@ const productInclude = {
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
+
+  async clearCache() {
+    try {
+      // In NestJS Cache-Manager v5+, 'clear' replaces 'reset' for cache flush
+      await this.cacheManager.clear();
+      console.log('⚡ Products Cache Cleared');
+    } catch (err) {
+      console.error('Failed to clear cache:', err);
+    }
+  }
 
   async findAll(query: ProductQueryDto) {
+    const cacheKey = `products:all:${JSON.stringify(query)}`;
+    try {
+      const cached = await this.cacheManager.get<any>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    } catch (err) {
+      console.error('Cache read error:', err);
+    }
+
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
@@ -56,8 +81,8 @@ export class ProductsService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } },
+        { name: { contains: query.search } },
+        { description: { contains: query.search } },
       ];
     }
 
@@ -92,7 +117,9 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
-    return {
+    // Map images stringified JSON back to array if needed on client,
+    // but the DB has it as TEXT. Let's return it directly.
+    const result = {
       items,
       meta: {
         total,
@@ -101,9 +128,23 @@ export class ProductsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    try {
+      await this.cacheManager.set(cacheKey, result, 60000);
+    } catch (err) {
+      console.error('Cache write error:', err);
+    }
+
+    return result;
   }
 
   async findBestsellers(limit = 8) {
+    const cacheKey = `products:bestsellers:${limit}`;
+    try {
+      const cached = await this.cacheManager.get<any>(cacheKey);
+      if (cached) return cached;
+    } catch (err) {}
+
     const grouped = await this.prisma.orderItem.groupBy({
       by: ['productId'],
       _sum: { quantity: true },
@@ -112,27 +153,34 @@ export class ProductsService {
     });
 
     const productIds = grouped.map((g) => g.productId);
+    let result: any[];
 
     if (productIds.length === 0) {
-      return this.prisma.product.findMany({
+      result = await this.prisma.product.findMany({
         where: { isFeatured: true, isAvailable: true },
         take: limit,
         include: {
           category: { select: { id: true, name: true, slug: true } },
         },
       });
+    } else {
+      const products = await this.prisma.product.findMany({
+        where: { id: { in: productIds }, isAvailable: true },
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+        },
+      });
+
+      result = productIds
+        .map((id) => products.find((p) => p.id === id))
+        .filter(Boolean);
     }
 
-    const products = await this.prisma.product.findMany({
-      where: { id: { in: productIds }, isAvailable: true },
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-      },
-    });
+    try {
+      await this.cacheManager.set(cacheKey, result, 60000);
+    } catch (err) {}
 
-    return productIds
-      .map((id) => products.find((p) => p.id === id))
-      .filter(Boolean);
+    return result;
   }
 
   async findOne(id: string) {
@@ -162,11 +210,12 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto) {
-    const { optionGroups, ...productData } = dto;
+    const { optionGroups, images, ...productData } = dto;
 
-    return this.prisma.product.create({
+    const newProduct = await this.prisma.product.create({
       data: {
         ...productData,
+        images: images ? JSON.stringify(images) : '[]',
         optionGroups: optionGroups?.length
           ? {
               create: optionGroups.map((group) => ({
@@ -191,27 +240,45 @@ export class ProductsService {
       },
       include: productInclude,
     });
+
+    await this.clearCache();
+    return newProduct;
   }
 
   async update(id: string, dto: UpdateProductDto) {
     await this.findOne(id);
-    return this.prisma.product.update({
+    const { images, ...productData } = dto;
+
+    const data: any = { ...productData };
+    if (images) {
+      data.images = JSON.stringify(images);
+    }
+
+    const updated = await this.prisma.product.update({
       where: { id },
-      data: dto,
+      data,
       include: productInclude,
     });
+
+    await this.clearCache();
+    return updated;
   }
 
   async toggleAvailability(id: string, isAvailable: boolean) {
     await this.findOne(id);
-    return this.prisma.product.update({
+    const updated = await this.prisma.product.update({
       where: { id },
       data: { isAvailable },
     });
+
+    await this.clearCache();
+    return updated;
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.product.delete({ where: { id } });
+    const deleted = await this.prisma.product.delete({ where: { id } });
+    await this.clearCache();
+    return deleted;
   }
 }
