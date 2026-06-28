@@ -10,7 +10,7 @@ export default function CheckoutSuccessPage() {
       <div className="flex h-24 w-24 items-center justify-center rounded-full bg-green-100 text-green-500">
         <CheckCircle2 className="h-12 w-12" />
       </div>
-      <h1 className="mt-6 font-[family-name:var(--font-heading)] text-3xl font-bold text-zinc-900">
+      <h1 className="mt-6 font-heading text-3xl font-bold text-zinc-900">
         Đặt hàng thành công!
       </h1>
       <p className="mt-2 text-zinc-500">

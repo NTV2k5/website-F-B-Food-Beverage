@@ -7,6 +7,8 @@ interface User {
   phone?: string | null;
   fullName: string;
   role: string;
+  loyaltyPoints: number;
+  loyaltyTier: string;
 }
 
 interface AuthStore {
