@@ -1,0 +1,98 @@
+{
+  "common": {
+    "appName": "F&B Shop",
+    "menu": "メニュー",
+    "cart": "カート",
+    "login": "ログイン",
+    "register": "会員登録",
+    "logout": "ログアウト",
+    "profile": "マイページ",
+    "orders": "注文履歴",
+    "admin": "管理者",
+    "shipper": "配達員",
+    "welcome": "ようこそ",
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "submit": "送信",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "fullName": "お名前",
+    "phone": "電話番号"
+  },
+  "header": {
+    "searchPlaceholder": "タピオカ、軽食を検索...",
+    "addressTooltip": "お届け先住所",
+    "points": "ポイント",
+    "logoutBtn": "終了"
+  },
+  "home": {
+    "bestsellers": "売れ筋ランキング",
+    "categories": "カテゴリ",
+    "viewMenu": "メニューを見る"
+  },
+  "menu": {
+    "filterCategory": "カテゴリで絞り込む",
+    "filterPrice": "価格帯",
+    "searchResult": "検索結果：",
+    "noProducts": "該当する商品が見つかりませんでした。",
+    "addToCart": "カートに追加",
+    "customTitle": "トッピングのカスタマイズ",
+    "minSelect": "最小選択数",
+    "maxSelect": "最大選択数",
+    "outOfStock": "売り切れ"
+  },
+  "cart": {
+    "title": "ショッピングカート",
+    "empty": "カートは空です。",
+    "orderSummary": "注文内容の概要",
+    "subtotal": "小計",
+    "shipping": "配送料",
+    "discount": "割引額",
+    "total": "お支払い合計",
+    "checkout": "レジに進む",
+    "options": "トッピングオプション"
+  },
+  "checkout": {
+    "title": "ご注文手続き",
+    "shippingInfo": "お届け先情報",
+    "fullName": "お名前",
+    "phone": "電話番号",
+    "address": "お届け先住所",
+    "note": "注文時のご要望 (例: 甘さ控えめ、営業時間内に配達)",
+    "paymentMethod": "お支払い方法",
+    "paymentCOD": "代金引換 (COD)",
+    "paymentQR": "自動 VietQR 銀行振込 (SePay)",
+    "coupon": "クーポンコード",
+    "apply": "適用",
+    "placeOrder": "注文を確定する",
+    "qrTitle": "VietQR コードをスキャンして支払う",
+    "qrAccount": "口座名義",
+    "qrContent": "振込名義/注文番号",
+    "success": "ご注文が完了しました！"
+  },
+  "profile": {
+    "title": "会員情報",
+    "tier": "会員ランク",
+    "points": "保有ポイント",
+    "addressBook": "お届け先住所録",
+    "addAddress": "新しい住所を追加",
+    "default": "デフォルト",
+    "setAsDefault": "デフォルトに設定",
+    "phone": "電話番号",
+    "title": "詳細住所"
+  },
+  "orders": {
+    "title": "注文履歴",
+    "orderNum": "注文番号",
+    "status": "ステータス",
+    "date": "注文日",
+    "total": "合計金額",
+    "tracking": "注文を追跡",
+    "noOrders": "まだ注文履歴がありません。"
+  },
+  "chatbot": {
+    "title": "チャットアシスタント",
+    "welcomeMsg": "こんにちは！本日はどのようなご用件でしょうか？",
+    "inputPlaceholder": "質問を入力してください..."
+  }
+}

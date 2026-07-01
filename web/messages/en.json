@@ -1,0 +1,98 @@
+{
+  "common": {
+    "appName": "F&B Shop",
+    "menu": "Menu",
+    "cart": "Cart",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "profile": "Profile",
+    "orders": "Orders",
+    "admin": "Admin",
+    "shipper": "Shipper",
+    "welcome": "Welcome",
+    "loading": "Loading...",
+    "error": "Error occurred",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "fullName": "Full name",
+    "phone": "Phone number"
+  },
+  "header": {
+    "searchPlaceholder": "Search milk tea, snacks...",
+    "addressTooltip": "Delivery address",
+    "points": "pts",
+    "logoutBtn": "Exit"
+  },
+  "home": {
+    "bestsellers": "Best Sellers",
+    "categories": "Delicious Categories",
+    "viewMenu": "View Menu"
+  },
+  "menu": {
+    "filterCategory": "Categories",
+    "filterPrice": "Price Range",
+    "searchResult": "Search results for",
+    "noProducts": "No products found.",
+    "addToCart": "Add to cart",
+    "customTitle": "Customize Product",
+    "minSelect": "Min select",
+    "maxSelect": "Max select",
+    "outOfStock": "Out of stock"
+  },
+  "cart": {
+    "title": "Your Cart",
+    "empty": "Your cart is currently empty.",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping Fee",
+    "discount": "Discount",
+    "total": "Total",
+    "checkout": "Proceed to checkout",
+    "options": "Options"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "shippingInfo": "Shipping Information",
+    "fullName": "Full name",
+    "phone": "Phone number",
+    "address": "Delivery Address",
+    "note": "Order notes (e.g. less sweet, deliver during working hours)",
+    "paymentMethod": "Payment Method",
+    "paymentCOD": "Cash on Delivery (COD)",
+    "paymentQR": "Automatic VietQR Transfer (SePay)",
+    "coupon": "Coupon code",
+    "apply": "Apply",
+    "placeOrder": "Place Order Now",
+    "qrTitle": "Scan VietQR to Pay",
+    "qrAccount": "Account holder",
+    "qrContent": "Transfer content",
+    "success": "Order placed successfully!"
+  },
+  "profile": {
+    "title": "Member Profile",
+    "tier": "Membership tier",
+    "points": "Loyalty points",
+    "addressBook": "Delivery Address Book",
+    "addAddress": "Add new address",
+    "default": "Default",
+    "setAsDefault": "Set as default",
+    "phone": "Phone number",
+    "title": "Detailed address"
+  },
+  "orders": {
+    "title": "Order History",
+    "orderNum": "Order Code",
+    "status": "Status",
+    "date": "Order date",
+    "total": "Total Amount",
+    "tracking": "Track Order",
+    "noOrders": "You don't have any orders yet."
+  },
+  "chatbot": {
+    "title": "F&B Assistant",
+    "welcomeMsg": "Hello! How can I help you today?",
+    "inputPlaceholder": "Type your question..."
+  }
+}

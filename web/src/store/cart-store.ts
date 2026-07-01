@@ -22,10 +22,23 @@ interface CartStore {
   subtotal: number;
 }
 
+const calculateTotalItems = (items: CartItem[]) => {
+  return items.reduce((sum, item) => sum + item.quantity, 0);
+};
+
+const calculateSubtotal = (items: CartItem[]) => {
+  return items.reduce((sum, item) => {
+    const optionsPrice = item.selectedOptions.reduce((optSum, opt) => optSum + opt.extraPrice, 0);
+    return sum + (item.basePrice + optionsPrice) * item.quantity;
+  }, 0);
+};
+
 export const useCartStore = create<CartStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       items: [],
+      totalItems: 0,
+      subtotal: 0,
       
       addItem: (newItem) => set((state) => {
         const existingIndex = state.items.findIndex(item => 
@@ -33,41 +46,60 @@ export const useCartStore = create<CartStore>()(
           JSON.stringify(item.selectedOptions) === JSON.stringify(newItem.selectedOptions)
         );
 
+        let updatedItems;
         if (existingIndex > -1) {
-          const updatedItems = [...state.items];
+          updatedItems = [...state.items];
           updatedItems[existingIndex] = {
             ...updatedItems[existingIndex],
             quantity: updatedItems[existingIndex].quantity + newItem.quantity,
           };
-          return { items: updatedItems };
+        } else {
+          updatedItems = [...state.items, newItem];
         }
 
-        return { items: [...state.items, newItem] };
+        return {
+          items: updatedItems,
+          totalItems: calculateTotalItems(updatedItems),
+          subtotal: calculateSubtotal(updatedItems),
+        };
       }),
 
-      updateItem: (id, updates) => set((state) => ({
-        items: state.items.map(item => item.id === id ? { ...item, ...updates } : item),
-      })),
+      updateItem: (id, updates) => set((state) => {
+        const updatedItems = state.items.map(item => 
+          item.id === id ? { ...item, ...updates } : item
+        );
+        return {
+          items: updatedItems,
+          totalItems: calculateTotalItems(updatedItems),
+          subtotal: calculateSubtotal(updatedItems),
+        };
+      }),
 
-      removeItem: (id) => set((state) => ({
-        items: state.items.filter(item => item.id !== id),
-      })),
+      removeItem: (id) => set((state) => {
+        const updatedItems = state.items.filter(item => item.id !== id);
+        return {
+          items: updatedItems,
+          totalItems: calculateTotalItems(updatedItems),
+          subtotal: calculateSubtotal(updatedItems),
+        };
+      }),
 
-      clearCart: () => set({ items: [] }),
-
-      get totalItems() {
-        return get().items.reduce((sum, item) => sum + item.quantity, 0);
-      },
-
-      get subtotal() {
-        return get().items.reduce((sum, item) => {
-          const optionsPrice = item.selectedOptions.reduce((optSum, opt) => optSum + opt.extraPrice, 0);
-          return sum + (item.basePrice + optionsPrice) * item.quantity;
-        }, 0);
-      },
+      clearCart: () => set({ 
+        items: [],
+        totalItems: 0,
+        subtotal: 0,
+      }),
     }),
     {
       name: 'fb-shop-cart',
+      onRehydrateStorage: () => {
+        return (state, error) => {
+          if (state && !error) {
+            state.totalItems = calculateTotalItems(state.items);
+            state.subtotal = calculateSubtotal(state.items);
+          }
+        };
+      },
     }
   )
 );

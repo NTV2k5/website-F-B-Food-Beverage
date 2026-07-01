@@ -1,0 +1,98 @@
+{
+  "common": {
+    "appName": "F&B Shop",
+    "menu": "菜单",
+    "cart": "购物车",
+    "login": "登录",
+    "register": "注册",
+    "logout": "登出",
+    "profile": "个人资料",
+    "orders": "我的订单",
+    "admin": "系统管理",
+    "shipper": "配送员",
+    "welcome": "欢迎",
+    "loading": "加载中...",
+    "error": "发生错误",
+    "submit": "提交",
+    "cancel": "取消",
+    "save": "保存",
+    "fullName": "姓名",
+    "phone": "手机号码"
+  },
+  "header": {
+    "searchPlaceholder": "搜索奶茶、零食...",
+    "addressTooltip": "收货地址",
+    "points": "积分",
+    "logoutBtn": "退出"
+  },
+  "home": {
+    "bestsellers": "热销商品",
+    "categories": "美食分类",
+    "viewMenu": "查看菜单"
+  },
+  "menu": {
+    "filterCategory": "按分类",
+    "filterPrice": "价格区间",
+    "searchResult": "搜索结果为",
+    "noProducts": "未找到相关商品。",
+    "addToCart": "加入购物车",
+    "customTitle": "自定义商品",
+    "minSelect": "最少选择",
+    "maxSelect": "最多选择",
+    "outOfStock": "已售罄"
+  },
+  "cart": {
+    "title": "您的购物车",
+    "empty": "您的购物车是空的。",
+    "orderSummary": "订单摘要",
+    "subtotal": "小计",
+    "shipping": "配送费",
+    "discount": "优惠折扣",
+    "total": "总计付款",
+    "checkout": "去结算",
+    "options": "选项"
+  },
+  "checkout": {
+    "title": "订单结算",
+    "shippingInfo": "收货信息",
+    "fullName": "姓名",
+    "phone": "手机号码",
+    "address": "送货地址",
+    "note": "订单备注（如：少糖、工作时间送达）",
+    "paymentMethod": "付款方式",
+    "paymentCOD": "货到付款 (COD)",
+    "paymentQR": "自动 VietQR 转账 (SePay)",
+    "coupon": "优惠券代码",
+    "apply": "应用",
+    "placeOrder": "立即下单",
+    "qrTitle": "扫描 VietQR 付款",
+    "qrAccount": "开户名",
+    "qrContent": "转账备注",
+    "success": "下单成功！"
+  },
+  "profile": {
+    "title": "会员中心",
+    "tier": "会员等级",
+    "points": "累计积分",
+    "addressBook": "收货地址簿",
+    "addAddress": "添加新地址",
+    "default": "默认",
+    "setAsDefault": "设为默认",
+    "phone": "手机号码",
+    "title": "详细地址"
+  },
+  "orders": {
+    "title": "历史订单",
+    "orderNum": "订单号",
+    "status": "状态",
+    "date": "下单时间",
+    "total": "总金额",
+    "tracking": "跟踪订单",
+    "noOrders": "您目前没有任何订单。"
+  },
+  "chatbot": {
+    "title": "智能客服",
+    "welcomeMsg": "您好！今天有什么我可以帮您的吗？",
+    "inputPlaceholder": "请输入您的问题..."
+  }
+}

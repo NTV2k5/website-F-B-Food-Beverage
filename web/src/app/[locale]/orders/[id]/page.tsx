@@ -1,6 +1,7 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { useAuthStore } from '@/store/auth-store';
 import { formatPrice } from '@/lib/utils';
 import { API_URL } from '@/lib/utils';
@@ -121,6 +122,149 @@ export default function OrderTrackingPage() {
     return () => clearInterval(interval);
   }, [order?.status]);
 
+  const printInvoice = () => {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) return;
+
+    const itemsHtml = order.items.map((item: any) => {
+      const optionsStr = item.selectedOptions && item.selectedOptions.length > 0
+        ? `(${item.selectedOptions.map((o: any) => o.optionName).join(', ')})`
+        : '';
+      return `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">
+            <strong>${item.productName}</strong><br/>
+            <small style="color: #666;">${optionsStr}</small>
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatPrice(item.unitPrice)}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">${formatPrice(item.subtotal || (item.unitPrice * item.quantity))}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const qrCodeHtml = order.paymentMethod === 'SEPAY'
+      ? `<div style="text-align: center; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <h4 style="margin: 0 0 10px 0;">MÃ QR THANH TOÁN</h4>
+          <img src="${order.paymentInfo?.qrUrl || `https://img.vietqr.io/image/MB-0123456789-compact2.png?amount=${order.totalAmount}&addInfo=${order.orderNumber}`}" style="width: 150px; height: 150px; border: 1px solid #eee; padding: 5px; border-radius: 8px;" />
+          <p style="font-size: 11px; color: #666; margin: 5px 0 0 0;">Nội dung CK: <strong>${order.orderNumber}</strong></p>
+         </div>`
+      : '';
+
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Hoa don #${order.orderNumber}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 30px; color: #333; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .header h2 { margin: 0; color: #f97316; }
+            .header p { margin: 5px 0; font-size: 12px; color: #666; }
+            .info-table { width: 100%; margin-bottom: 20px; font-size: 13px; }
+            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+            .items-table th { background: #f8f9fa; padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6; }
+            .totals { float: right; width: 250px; font-size: 13px; margin-top: 10px; }
+            .totals table { width: 100%; }
+            .totals td { padding: 4px 0; }
+            .footer { text-align: center; margin-top: 40px; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 15px; }
+            @media print {
+              body { margin: 10px; }
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2>F&B SHOP</h2>
+            <p>Nước uống & Đồ ăn vặt thơm ngon</p>
+            <p>Hotline: 1900 1234 - Địa chỉ: 123 Nguyễn Huệ, Quận 1, TP.HCM</p>
+            <h3 style="margin-top: 20px; border-bottom: 2px solid #333; padding-bottom: 5px;">HÓA ĐƠN BÁN HÀNG</h3>
+          </div>
+
+          <table class="info-table">
+            <tr>
+              <td><strong>Mã đơn hàng:</strong> ${order.orderNumber}</td>
+              <td style="text-align: right;"><strong>Ngày đặt:</strong> ${new Date(order.createdAt).toLocaleString('vi-VN')}</td>
+            </tr>
+            <tr>
+              <td><strong>Khách hàng:</strong> ${order.user?.fullName || order.fullName || ''}</td>
+              <td style="text-align: right;"><strong>Số điện thoại:</strong> ${order.user?.phone || order.phone || ''}</td>
+            </tr>
+            <tr>
+              <td colspan="2"><strong>Địa chỉ:</strong> ${order.deliveryAddress?.fullAddress || order.deliveryAddress || ''}</td>
+            </tr>
+            <tr>
+              <td colspan="2"><strong>Phương thức thanh toán:</strong> ${order.paymentMethod === 'COD' ? 'Thanh toán tiền mặt khi nhận hàng (COD)' : 'Chuyển khoản VietQR'}</td>
+            </tr>
+            ${order.requestInvoice ? `<tr><td colspan="2" style="color: #f97316; font-weight: bold;">* Khách hàng yêu cầu hóa đơn giấy đi kèm</td></tr>` : ''}
+          </table>
+
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th style="text-align: center; width: 60px;">SL</th>
+                <th style="text-align: right; width: 100px;">Đơn giá</th>
+                <th style="text-align: right; width: 100px;">Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <table>
+              <tr>
+                <td>Tạm tính:</td>
+                <td style="text-align: right;">${formatPrice(order.subtotal)}</td>
+              </tr>
+              <tr>
+                <td>Phí giao hàng:</td>
+                <td style="text-align: right;">+${formatPrice(order.shippingFee)}</td>
+              </tr>
+              ${parseFloat(order.discountAmount || 0) > 0 ? `
+                <tr style="color: green;">
+                  <td>Giảm giá:</td>
+                  <td style="text-align: right;">-${formatPrice(order.discountAmount)}</td>
+                </tr>
+              ` : ''}
+              ${parseFloat(order.pointsDiscount || 0) > 0 ? `
+                <tr style="color: green;">
+                  <td>Dùng điểm tích lũy:</td>
+                  <td style="text-align: right;">-${formatPrice(order.pointsDiscount)}</td>
+                </tr>
+              ` : ''}
+              <tr style="font-weight: bold; font-size: 15px; border-top: 1px solid #333;">
+                <td style="padding-top: 8px;">Tổng cộng:</td>
+                <td style="padding-top: 8px; text-align: right; color: #f97316;">${formatPrice(order.totalAmount)}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div style="clear: both;"></div>
+
+          ${qrCodeHtml}
+
+          <div class="footer">
+            <p>Cảm ơn quý khách đã tin tưởng và đặt hàng tại F&B Shop!</p>
+            <p>Hẹn gặp lại quý khách!</p>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
+
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewedProduct) return;
@@ -198,9 +342,17 @@ export default function OrderTrackingPage() {
               </h1>
               <p className="text-xs text-zinc-400 mt-1">Đặt lúc: {new Date(order.createdAt).toLocaleString('vi-VN')}</p>
             </div>
-            <div className="rounded-2xl bg-orange-100/60 px-4 py-2 text-right">
-              <span className="block text-xs text-zinc-400 font-semibold">TỔNG THANH TOÁN</span>
-              <span className="text-xl font-black text-orange-600">{formatPrice(order.totalAmount)}</span>
+            <div className="flex flex-col gap-2 items-end">
+              <div className="rounded-2xl bg-orange-100/60 px-4 py-2 text-right">
+                <span className="block text-xs text-zinc-400 font-semibold">TỔNG THANH TOÁN</span>
+                <span className="text-xl font-black text-orange-600">{formatPrice(order.totalAmount)}</span>
+              </div>
+              <button
+                onClick={printInvoice}
+                className="mt-1 flex items-center gap-1 px-3 py-1.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-bold text-zinc-700 transition cursor-pointer shadow-sm"
+              >
+                🖨️ In hóa đơn
+              </button>
             </div>
           </div>
 
@@ -253,46 +405,15 @@ export default function OrderTrackingPage() {
           <div className="mt-6 rounded-3xl border border-white/40 bg-white/70 p-6 shadow-xl backdrop-blur-xl">
             <h3 className="font-bold text-zinc-900 mb-4 flex items-center gap-1.5">
               <Truck className="h-5 w-5 text-orange-500 animate-bounce" />
-              Hành trình giao hàng (Real-time tracking)
+              Bản đồ hành trình giao hàng (Real Map Tracking)
             </h3>
-            <div className="relative h-48 w-full overflow-hidden rounded-2xl bg-orange-50 border border-orange-100">
-              {/* Fake Map Grid lines */}
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffd8b3_1px,transparent_1px),linear-gradient(to_bottom,#ffd8b3_1px,transparent_1px)] bg-[size:30px_30px] opacity-20" />
-              
-              {/* Store Point */}
-              <div className="absolute left-10 top-1/2 -translate-y-1/2 flex flex-col items-center">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-white font-black shadow-md">F</div>
-                <span className="text-[10px] text-zinc-500 font-bold mt-1">F&B Shop</span>
-              </div>
-
-              {/* Customer Point */}
-              <div className="absolute right-10 top-1/2 -translate-y-1/2 flex flex-col items-center">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white shadow-md">
-                  <MapPin className="h-4 w-4" />
-                </div>
-                <span className="text-[10px] text-zinc-500 font-bold mt-1">Bạn</span>
-              </div>
-
-              {/* Path Line */}
-              <div className="absolute left-[70px] right-[70px] top-1/2 h-1.5 -translate-y-1/2 bg-zinc-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-orange-500 transition-all duration-1000 ease-out" 
-                  style={{ width: `${shipperProgress}%` }}
-                />
-              </div>
-
-              {/* Shipper Icon Moving */}
-              <div 
-                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center transition-all duration-1000 ease-out"
-                style={{ left: `calc(70px + (100% - 140px) * ${shipperProgress / 100})` }}
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white border border-orange-500 text-orange-500 shadow-md">
-                  <Truck className="h-5 w-5 animate-pulse" />
-                </div>
-                <span className="text-[8px] bg-orange-600 text-white font-bold px-1 py-0.5 rounded shadow mt-1 whitespace-nowrap">
-                  Shipper ({shipperProgress}%)
-                </span>
-              </div>
+            <div className="relative h-72 w-full overflow-hidden rounded-2xl border border-zinc-200 shadow-inner bg-zinc-50">
+              <iframe
+                src={`https://maps.google.com/maps?q=${order.deliveryLat || 10.762622},${order.deliveryLng || 106.660172}&z=16&output=embed`}
+                className="w-full h-full border-0 rounded-2xl"
+                allowFullScreen
+                loading="lazy"
+              />
             </div>
             {order.shipper && (
               <div className="mt-4 flex items-center justify-between rounded-xl bg-zinc-50 p-3">
@@ -322,7 +443,7 @@ export default function OrderTrackingPage() {
             <h3 className="font-bold text-zinc-900">Vui lòng quét mã để thanh toán</h3>
             <div className="relative mx-auto mt-4 h-48 w-48 overflow-hidden rounded-2xl border-2 border-zinc-100 bg-white p-2 flex items-center justify-center">
               <img
-                src={`https://img.vietqr.io/image/970422-0123456789-compact2.png?amount=${order.totalAmount}&addInfo=${order.orderNumber}`}
+                src={order.paymentInfo?.qrUrl || `https://img.vietqr.io/image/MB-0123456789-compact2.png?amount=${order.totalAmount}&addInfo=${order.orderNumber}`}
                 alt="VietQR Code"
                 className="h-full w-full object-contain"
               />

@@ -1,16 +1,17 @@
 import { CategoryPills } from "@/components/products/category-pills";
 import { ProductCard } from "@/components/products/product-card";
 import { getCategories, getProducts } from "@/lib/api";
+import { Link } from "@/i18n/routing";
 
 interface MenuPageProps {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; search?: string }>;
 }
 
 export default async function MenuPage({ searchParams }: MenuPageProps) {
-  const { category } = await searchParams;
+  const { category, search } = await searchParams;
   const [categories, productsData] = await Promise.all([
     getCategories(),
-    getProducts({ category, limit: 24 }),
+    getProducts({ category, search, limit: 24 }),
   ]);
 
   return (
@@ -21,6 +22,17 @@ export default async function MenuPage({ searchParams }: MenuPageProps) {
       <p className="mt-2 text-zinc-500">
         {productsData.meta.total} món · Chọn món yêu thích và thêm vào giỏ
       </p>
+
+      {search && (
+        <div className="mt-4 flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl p-4 text-sm">
+          <span className="text-zinc-700">
+            Kết quả tìm kiếm cho: <strong className="text-orange-600">"{search}"</strong>
+          </span>
+          <Link href="/menu" className="text-xs text-orange-650 font-bold hover:underline">
+            Xóa tìm kiếm
+          </Link>
+        </div>
+      )}
 
       <div className="mt-6">
         <CategoryPills categories={categories} activeSlug={category} />
@@ -34,9 +46,10 @@ export default async function MenuPage({ searchParams }: MenuPageProps) {
         </div>
       ) : (
         <div className="mt-12 rounded-2xl border border-dashed border-zinc-200 bg-white p-12 text-center">
-          <p className="text-zinc-500">Không tìm thấy món trong danh mục này.</p>
+          <p className="text-zinc-500">Không tìm thấy món nào.</p>
         </div>
       )}
     </div>
   );
 }
+
