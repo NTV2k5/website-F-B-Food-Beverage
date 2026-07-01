@@ -2,16 +2,24 @@ import { API_URL } from "./utils";
 import type { Category, Product, ProductsResponse } from "@/types";
 
 async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    next: { revalidate: 60 },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${path}`);
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      next: { revalidate: 60 },
+    });
+
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status} ${path}`);
+    }
+
+    return res.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return res.json();
 }
 
 export async function getCategories(): Promise<Category[]> {
@@ -26,13 +34,15 @@ export async function getProducts(params?: {
   category?: string;
   featured?: boolean;
   limit?: number;
+  search?: string;
 }): Promise<ProductsResponse> {
-  const search = new URLSearchParams();
-  if (params?.category) search.set("category", params.category);
-  if (params?.featured) search.set("featured", "true");
-  if (params?.limit) search.set("limit", String(params.limit));
+  const searchParams = new URLSearchParams();
+  if (params?.category) searchParams.set("category", params.category);
+  if (params?.featured) searchParams.set("featured", "true");
+  if (params?.limit) searchParams.set("limit", String(params.limit));
+  if (params?.search) searchParams.set("search", params.search);
 
-  const query = search.toString();
+  const query = searchParams.toString();
   try {
     return await fetchApi<ProductsResponse>(
       `/products${query ? `?${query}` : ""}`,
