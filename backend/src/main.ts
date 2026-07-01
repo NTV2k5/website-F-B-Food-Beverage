@@ -26,6 +26,17 @@ async function bootstrap() {
     .setTitle('F&B Shop API')
     .setDescription('Food & Beverage ordering platform API')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
