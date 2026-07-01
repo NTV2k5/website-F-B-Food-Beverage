@@ -14,6 +14,20 @@ export class OrdersService {
   ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const pointsUsed = dto.pointsUsed || 0;
+    let pointsDiscount = 0;
+    if (pointsUsed > 0) {
+      if (user.loyaltyPoints < pointsUsed) {
+        throw new BadRequestException('Bạn không đủ điểm tích lũy');
+      }
+      pointsDiscount = pointsUsed * 1000;
+    }
+
     let discountAmount = 0;
     let coupon = null;
 
@@ -79,15 +93,19 @@ export class OrdersService {
       }
     }
 
-    const totalAmount = subtotal + dto.shippingFee - discountAmount;
+    const totalAmount = Math.max(0, subtotal + dto.shippingFee - discountAmount - pointsDiscount);
 
     const orderNumber = `DH${Date.now().toString().slice(-8)}`;
+
+    // COD orders are confirmed immediately (no prepayment needed)
+    // SEPAY orders wait for payment webhook before being confirmed
+    const initialStatus = dto.paymentMethod === 'COD' ? OrderStatus.CONFIRMED : OrderStatus.PENDING_PAYMENT;
 
     const order = await this.prisma.order.create({
       data: {
         orderNumber,
         userId,
-        status: OrderStatus.PENDING_PAYMENT,
+        status: initialStatus,
         subtotal,
         shippingFee: dto.shippingFee,
         discountAmount,
@@ -99,15 +117,26 @@ export class OrdersService {
         deliveryLat: dto.deliveryAddress.lat,
         deliveryLng: dto.deliveryAddress.lng,
         note: dto.note,
+        pointsUsed,
+        pointsDiscount,
+        requestInvoice: dto.requestInvoice || false,
         items: { create: orderItems },
         statusLogs: {
           create: {
-            status: OrderStatus.PENDING_PAYMENT,
+            status: initialStatus,
+            note: dto.paymentMethod === 'COD' ? 'Đơn COD - Xác nhận tự động' : 'Chờ thanh toán',
           },
         },
       },
       include: { items: { include: { product: true } } },
     });
+
+    if (pointsUsed > 0) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { loyaltyPoints: { decrement: pointsUsed } },
+      });
+    }
 
     if (coupon) {
       await this.prisma.coupon.update({
@@ -125,6 +154,7 @@ export class OrdersService {
       order,
       paymentInfo: dto.paymentMethod === 'SEPAY' ? this.generateSePayPayment(order) : null,
     };
+
   }
 
   private generateSePayPayment(order: any) {
@@ -162,7 +192,12 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    return order;
+    return {
+      ...order,
+      paymentInfo: order.paymentMethod === 'SEPAY' && order.status === OrderStatus.PENDING_PAYMENT
+        ? this.generateSePayPayment(order)
+        : null,
+    };
   }
 
   async handleSePayWebhook(data: any) {
@@ -427,4 +462,93 @@ export class OrdersService {
       },
     });
   }
+
+  async getAdminCoupons() {
+    return this.prisma.coupon.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createCoupon(dto: any) {
+    return this.prisma.coupon.create({
+      data: {
+        code: dto.code.toUpperCase(),
+        type: dto.type,
+        value: Number(dto.value),
+        minOrderAmount: Number(dto.minOrderAmount || 0),
+        maxUsage: dto.maxUsage ? Number(dto.maxUsage) : null,
+        expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+        isActive: dto.isActive !== undefined ? dto.isActive : true,
+      },
+    });
+  }
+
+  async deleteCoupon(id: string) {
+    return this.prisma.coupon.delete({
+      where: { id },
+    });
+  }
+
+  async getAdminReviews() {
+    return this.prisma.review.findMany({
+      include: {
+        user: {
+          select: { fullName: true, email: true },
+        },
+        product: {
+          select: { name: true, image: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+
+  async getRevenueAnalytics() {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        createdAt: { gte: sevenDaysAgo },
+        paymentStatus: PaymentStatus.PAID,
+      },
+      select: {
+        createdAt: true,
+        totalAmount: true,
+      },
+    });
+
+    const dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const revenueMap: Record<string, number> = {};
+    
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const label = dayLabels[d.getDay()];
+      revenueMap[label] = 0;
+    }
+
+    orders.forEach((order) => {
+      const label = dayLabels[order.createdAt.getDay()];
+      if (revenueMap[label] !== undefined) {
+        revenueMap[label] += order.totalAmount.toNumber();
+      }
+    });
+
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const label = dayLabels[d.getDay()];
+      result.push({
+        label,
+        value: revenueMap[label] || 0,
+      });
+    }
+
+    return result;
+  }
 }
+
