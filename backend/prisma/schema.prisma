@@ -192,6 +192,9 @@ model Order {
   deliveryLng     Float
   note            String?
   cancelReason    String?
+  pointsUsed      Int           @default(0)
+  pointsDiscount  Decimal       @default(0)
+  requestInvoice  Boolean       @default(false)
   shipperId       String?
   shipper         User?         @relation("ShipperOrders", fields: [shipperId], references: [id])
   paidAt          DateTime?
