@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
-import "./globals.css";
+import "../globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Chatbot } from "@/components/layout/chatbot";
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-heading",
@@ -18,22 +21,29 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "F&B Shop — Nước uống & Đồ ăn vặt",
-  description:
-    "Đặt trà sữa, nước ép, snack online. Giao hàng nhanh, thanh toán VietQR.",
+  description: "Đặt trà sữa, nước ép, snack online. Giao hàng nhanh, thanh toán VietQR.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }>) {
+  const { locale } = await params;
+  const messages = await getMessages();
+
   return (
-    <html lang="vi" className={`${jakarta.variable} ${inter.variable}`}>
+    <html lang={locale} className={`${jakarta.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-zinc-50 font-[family-name:var(--font-body)] text-zinc-900 antialiased">
-        <Header />
-        <main className="pb-20 md:pb-0">{children}</main>
-        <Footer />
-        <BottomNav />
+        <NextIntlClientProvider messages={messages}>
+          <Header />
+          <main className="pb-20 md:pb-0">{children}</main>
+          <Footer />
+          <BottomNav />
+          <Chatbot />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

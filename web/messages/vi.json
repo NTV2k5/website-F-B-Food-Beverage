@@ -1,0 +1,98 @@
+{
+  "common": {
+    "appName": "F&B Shop",
+    "menu": "Thực đơn",
+    "cart": "Giỏ hàng",
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "logout": "Đăng xuất",
+    "profile": "Hồ sơ",
+    "orders": "Đơn hàng",
+    "admin": "Quản trị",
+    "shipper": "Shipper",
+    "welcome": "Chào mừng",
+    "loading": "Đang tải...",
+    "error": "Có lỗi xảy ra",
+    "submit": "Gửi",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "fullName": "Họ và tên",
+    "phone": "Số điện thoại"
+  },
+  "header": {
+    "searchPlaceholder": "Tìm trà sữa, snack...",
+    "addressTooltip": "Địa chỉ giao hàng",
+    "points": "điểm",
+    "logoutBtn": "Thoát"
+  },
+  "home": {
+    "bestsellers": "Món Bán Chạy Nhất",
+    "categories": "Danh Mục Món Ngon",
+    "viewMenu": "Xem thực đơn"
+  },
+  "menu": {
+    "filterCategory": "Theo danh mục",
+    "filterPrice": "Khoảng giá",
+    "searchResult": "Kết quả tìm kiếm cho",
+    "noProducts": "Không tìm thấy sản phẩm nào.",
+    "addToCart": "Thêm vào giỏ",
+    "customTitle": "Tùy chỉnh món ăn",
+    "minSelect": "Chọn tối thiểu",
+    "maxSelect": "Chọn tối đa",
+    "outOfStock": "Hết hàng"
+  },
+  "cart": {
+    "title": "Giỏ Hàng Của Bạn",
+    "empty": "Giỏ hàng của bạn đang trống.",
+    "orderSummary": "Tóm tắt đơn hàng",
+    "subtotal": "Tạm tính",
+    "shipping": "Phí giao hàng",
+    "discount": "Giảm giá",
+    "total": "Tổng thanh toán",
+    "checkout": "Tiến hành thanh toán",
+    "options": "Tùy chọn"
+  },
+  "checkout": {
+    "title": "Thanh Toán Đơn Hàng",
+    "shippingInfo": "Thông tin nhận hàng",
+    "fullName": "Họ và tên",
+    "phone": "Số điện thoại",
+    "address": "Địa chỉ giao hàng",
+    "note": "Ghi chú đơn hàng (ví dụ: ít ngọt, giao giờ hành chính)",
+    "paymentMethod": "Phương thức thanh toán",
+    "paymentCOD": "Thanh toán khi nhận hàng (COD)",
+    "paymentQR": "Chuyển khoản VietQR tự động (SePay)",
+    "coupon": "Mã giảm giá",
+    "apply": "Áp dụng",
+    "placeOrder": "Đặt hàng ngay",
+    "qrTitle": "Quét mã VietQR để thanh toán",
+    "qrAccount": "Chủ tài khoản",
+    "qrContent": "Nội dung chuyển khoản",
+    "success": "Đặt hàng thành công!"
+  },
+  "profile": {
+    "title": "Hồ Sơ Thành Viên",
+    "tier": "Hạng thành viên",
+    "points": "Điểm tích lũy",
+    "addressBook": "Sổ Địa Chỉ Giao Hàng",
+    "addAddress": "Thêm địa chỉ mới",
+    "default": "Mặc định",
+    "setAsDefault": "Đặt làm mặc định",
+    "phone": "Số điện thoại",
+    "title": "Địa chỉ chi tiết"
+  },
+  "orders": {
+    "title": "Lịch Sử Đơn Hàng",
+    "orderNum": "Mã đơn",
+    "status": "Trạng thái",
+    "date": "Ngày đặt",
+    "total": "Tổng cộng",
+    "tracking": "Theo dõi",
+    "noOrders": "Bạn chưa có đơn hàng nào."
+  },
+  "chatbot": {
+    "title": "Trợ lý ảo F&B",
+    "welcomeMsg": "Xin chào! Tôi có thể giúp gì cho bạn hôm nay?",
+    "inputPlaceholder": "Nhập câu hỏi của bạn..."
+  }
+}

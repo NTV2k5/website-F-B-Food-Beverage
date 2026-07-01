@@ -1,17 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { Link, useRouter } from '@/i18n/routing';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { API_URL } from '@/lib/utils';
-import { Lock, Mail, Loader2, Sparkles } from 'lucide-react';
+import { Lock, Mail, User, Phone, Loader2, Sparkles } from 'lucide-react';
 
-export default function SignInPage() {
+export default function SignUpPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,19 +23,19 @@ export default function SignInPage() {
     setLoading(true);
 
     try {
-      // 1. Login to get tokens
-      const loginRes = await fetch(`${API_URL}/auth/login`, {
+      // 1. Register user
+      const registerRes = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ fullName, email, phone, password }),
       });
 
-      if (!loginRes.ok) {
-        const data = await loginRes.json();
-        throw new Error(data.message || 'Đăng nhập thất bại');
+      if (!registerRes.ok) {
+        const data = await registerRes.json();
+        throw new Error(data.message || 'Đăng ký thất bại');
       }
 
-      const { accessToken, refreshToken } = await loginRes.json();
+      const { accessToken, refreshToken } = await registerRes.json();
 
       // 2. Fetch user profile
       const profileRes = await fetch(`${API_URL}/auth/me`, {
@@ -44,22 +45,14 @@ export default function SignInPage() {
       });
 
       if (!profileRes.ok) {
-        throw new Error('Không thể tải thông tin cá nhân');
+        throw new Error('Không thể lấy thông tin đăng ký');
       }
 
       const user = await profileRes.json();
 
-      // 3. Save to Zustand store
+      // 3. Save auth state
       setAuth(user, accessToken, refreshToken);
-
-      // Redirect based on role
-      if (user.role === 'ADMIN') {
-        router.push('/admin');
-      } else if (user.role === 'SHIPPER') {
-        router.push('/shipper');
-      } else {
-        router.push('/');
-      }
+      router.push('/');
     } catch (err: any) {
       setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại');
     } finally {
@@ -79,10 +72,10 @@ export default function SignInPage() {
             <Sparkles className="h-6 w-6" />
           </div>
           <h1 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-extrabold text-zinc-900">
-            Chào mừng trở lại!
+            Đăng ký tài khoản
           </h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Đăng nhập để đặt món ngon và tích điểm đổi quà
+            Tạo tài khoản để thưởng thức trà sữa & đồ ăn vặt cực ngon
           </p>
         </div>
 
@@ -94,6 +87,21 @@ export default function SignInPage() {
           )}
 
           <div>
+            <label className="block text-sm font-semibold text-zinc-700">Họ và tên</label>
+            <div className="relative mt-1">
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Nguyễn Văn A"
+                className="h-11 w-full rounded-xl border border-zinc-200 bg-white/50 pl-10 pr-4 text-sm outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
+              />
+            </div>
+          </div>
+
+          <div>
             <label className="block text-sm font-semibold text-zinc-700">Email</label>
             <div className="relative mt-1">
               <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -102,7 +110,22 @@ export default function SignInPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="customer@fb.com"
+                placeholder="email@example.com"
+                className="h-11 w-full rounded-xl border border-zinc-200 bg-white/50 pl-10 pr-4 text-sm outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-zinc-700">Số điện thoại</label>
+            <div className="relative mt-1">
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="0901234567"
                 className="h-11 w-full rounded-xl border border-zinc-200 bg-white/50 pl-10 pr-4 text-sm outline-none transition focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10"
               />
             </div>
@@ -123,10 +146,6 @@ export default function SignInPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-zinc-400">Tài khoản test: admin@fb.com / shipper@fb.com / customer@fb.com (Mật khẩu: 123456)</span>
-          </div>
-
           <Button
             type="submit"
             disabled={loading}
@@ -135,18 +154,18 @@ export default function SignInPage() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Đang đăng nhập...
+                Đang tạo tài khoản...
               </>
             ) : (
-              'Đăng nhập'
+              'Đăng ký'
             )}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-zinc-500">
-          Chưa có tài khoản?{' '}
-          <Link href="/sign-up" className="font-semibold text-orange-600 hover:underline">
-            Đăng ký ngay
+          Đã có tài khoản?{' '}
+          <Link href="/sign-in" className="font-semibold text-orange-600 hover:underline">
+            Đăng nhập ngay
           </Link>
         </p>
       </div>

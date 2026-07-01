@@ -3,7 +3,7 @@
 import { useCartStore } from '@/store/cart-store';
 import { useAuthStore } from '@/store/auth-store';
 import { formatPrice } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CreditCard, MapPin, Phone, User, Tag, Loader2, Info, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -26,7 +26,7 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>;
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCartStore();
-  const { user, accessToken } = useAuthStore();
+  const { user, accessToken, logout } = useAuthStore();
 
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
@@ -41,6 +41,9 @@ export default function CheckoutPage() {
   const [qrInfo, setQrInfo] = useState<any>(null);
   const [createdOrderId, setCreatedOrderId] = useState<string>('');
 
+  const [usePoints, setUsePoints] = useState(false);
+  const [requestInvoice, setRequestInvoice] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -53,8 +56,15 @@ export default function CheckoutPage() {
     },
   });
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Redirect if not logged in
   useEffect(() => {
+    if (!mounted) return;
     if (!user) {
       router.push('/sign-in?redirect=/checkout');
     } else {
@@ -63,7 +73,7 @@ export default function CheckoutPage() {
         setValue('phone', user.phone);
       }
     }
-  }, [user, router, setValue]);
+  }, [mounted, user, router, setValue]);
 
   const shippingFee = 15000;
   
@@ -76,8 +86,21 @@ export default function CheckoutPage() {
       discountAmount = parseFloat(activeCoupon.value);
     }
   }
-  const total = Math.max(0, subtotal + shippingFee - discountAmount);
 
+  const pointsAvailable = user?.loyaltyPoints || 0;
+  const pointsDiscount = usePoints ? pointsAvailable * 1000 : 0;
+  const total = Math.max(0, subtotal + shippingFee - discountAmount - pointsDiscount);
+
+
+  if (!mounted) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-zinc-50">
+        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
+  // Only check empty cart AFTER mounted (after Zustand hydrates from localStorage)
   if (items.length === 0) {
     return (
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-zinc-50">
@@ -90,6 +113,7 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
 
   const applyCoupon = async () => {
     if (!couponCode) return;
@@ -149,6 +173,8 @@ export default function CheckoutPage() {
         },
         shippingFee,
         couponCode: activeCoupon ? activeCoupon.code : undefined,
+        pointsUsed: usePoints ? pointsAvailable : 0,
+        requestInvoice,
         note: data.note,
       };
 
@@ -160,6 +186,12 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify(orderPayload),
       });
+
+      if (res.status === 401) {
+        logout();
+        router.push('/sign-in?redirect=/checkout');
+        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      }
 
       const result = await res.json();
       if (!res.ok) {
@@ -273,6 +305,44 @@ export default function CheckoutPage() {
                     className="w-full rounded-xl border border-zinc-200 bg-white/50 px-4 py-3 focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 outline-none transition text-sm resize-none"
                     placeholder="Ví dụ: Ít ngọt, shipper gọi trước khi giao,..."
                   />
+                </div>
+
+                {/* Loyalty points and Paper Invoice */}
+                <div className="mt-6 pt-4 border-t border-zinc-100 space-y-4">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-zinc-900">
+                    🎁 Ưu đãi & Dịch vụ thêm
+                  </h3>
+
+                  {pointsAvailable > 0 && (
+                    <label className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white/50 p-4 cursor-pointer hover:border-orange-200 transition-all">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={usePoints}
+                          onChange={(e) => setUsePoints(e.target.checked)}
+                          className="h-5 w-5 accent-orange-500 rounded cursor-pointer"
+                        />
+                        <div>
+                          <p className="font-bold text-zinc-900 text-sm">Dùng {pointsAvailable} điểm tích lũy</p>
+                          <p className="text-xs text-zinc-500 mt-0.5">Quy đổi giảm ngay: -{formatPrice(pointsAvailable * 1000)}</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-orange-500">⭐ ⭐</span>
+                    </label>
+                  )}
+
+                  <label className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white/50 p-4 cursor-pointer hover:border-orange-200 transition-all">
+                    <input
+                      type="checkbox"
+                      checked={requestInvoice}
+                      onChange={(e) => setRequestInvoice(e.target.checked)}
+                      className="h-5 w-5 accent-orange-500 rounded cursor-pointer"
+                    />
+                    <div>
+                      <p className="font-bold text-zinc-900 text-sm">Yêu cầu xuất hóa đơn giấy</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Shipper sẽ giao kèm hóa đơn giấy in từ cửa hàng có QR thanh toán.</p>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Payment Method */}
@@ -419,6 +489,12 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-xs text-green-600 font-medium">
                     <span>Giảm giá ({activeCoupon.code})</span>
                     <span>-{formatPrice(discountAmount)}</span>
+                  </div>
+                )}
+                {usePoints && pointsAvailable > 0 && (
+                  <div className="flex justify-between text-xs text-green-600 font-medium">
+                    <span>Điểm tích lũy ({pointsAvailable} điểm)</span>
+                    <span>-{formatPrice(pointsDiscount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-extrabold text-zinc-900 pt-3 border-t border-zinc-150">
